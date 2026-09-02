@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+# This repo tracks CRM *functionality* only — Obsidian plugin config, the
+# QuickAdd templates + scripts, and the Dashboard. The actual CRM data and
+# notes (Companies, People, Service Requests, Meetings, Notes, Sales, images)
+# are deliberately NOT tracked.
+#
+# Strategy: ignore everything at the vault root, then re-include the parts
+# that are needed to reconstruct the setup on a fresh machine.
+# ---------------------------------------------------------------------------
+
+# 1. Ignore everything at the root by default...
+/*
+
+# 2. ...then re-include the functionality bits.
+!/.gitignore
+!/.obsidian/
+!/Templates/
+!/Scripts/
+!/Runbooks/
+!/Dashboard.md
+!/CRM Automations.md
+!/CRM Design Recommendation.md
+
+# 3. Runbooks/ holds mostly client notes — keep only the reusable template.
+/Runbooks/*
+!/Runbooks/Runbook Template.md
+
+# 4. Inside .obsidian/: keep the JSON config, drop the bulky vendored plugin
+#    code (re-installed from the community store) and per-machine UI state.
+/.obsidian/plugins/*/main.js
+/.obsidian/plugins/*/styles.css
+/.obsidian/workspace.json
+/.obsidian/workspace-mobile.json
+/.obsidian/**/*.bak
+
+# 5. Local Claude Code state (machine-specific).
+/.claude/
