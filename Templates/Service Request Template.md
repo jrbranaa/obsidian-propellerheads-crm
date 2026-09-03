@@ -13,7 +13,8 @@ closed:
 ---
 ## Time Log
 
-
+| Date | Hours | Billable | Notes |
+| --- | --- | --- | --- |
 
 ---
 ## Related Service Requests
