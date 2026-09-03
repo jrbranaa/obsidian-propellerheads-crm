@@ -180,6 +180,27 @@
           }
         ]
       }
+    },
+    {
+      "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      "name": "New Project",
+      "type": "Macro",
+      "command": true,
+      "onePageInput": null,
+      "runOnStartup": false,
+      "macro": {
+        "name": "New Project",
+        "id": "2c7e9f1a-3b5d-4e6f-8a1b-0c2d4e6f8a1b",
+        "commands": [
+          {
+            "id": "9b8a7c6d-5e4f-4a3b-8c1d-0e9f8a7b6c5d",
+            "name": "Project prompt + create note",
+            "type": "UserScript",
+            "path": "Scripts/project-quickadd.js",
+            "settings": {}
+          }
+        ]
+      }
     }
   ],
   "inputPrompt": "single-line",

@@ -8,8 +8,9 @@
  *   3. Prompt for a short title
  *   4. Pick a contact from People/ whose `company` links to that customer
  *      (or "none", or type a free-text name)
- *   5. Optional description
- *   6. Create  Service Requests/<CODE><YYYYMMDD>-<title>/Initial Request.md
+ *   5. Optionally link a Project from Projects/ whose `client` is that customer
+ *   6. Optional description
+ *   7. Create  Service Requests/<CODE><YYYYMMDD>-<title>/Initial Request.md
  *      from Templates/Service Request Template.md, then open it.
  *
  * No Templater dependency — the template's {{VALUE:...}} / {{DATE:...}}
@@ -21,6 +22,7 @@ const TEMPLATE_PATH = "Templates/Service Request Template.md";
 const SR_ROOT = "Service Requests";
 const COMPANIES_ROOT = "Companies/";
 const PEOPLE_ROOT = "People/";
+const PROJECTS_ROOT = "Projects/";
 
 module.exports = async (params) => {
 	const { app, quickAddApi: qa } = params;
@@ -90,12 +92,32 @@ module.exports = async (params) => {
 		contact = picked;
 	}
 
-	// 5. Description --------------------------------------------------
+	// 5. Project (optional) ------------------------------------------
+	const P_NONE = "— none —";
+	const projects = app.vault
+		.getMarkdownFiles()
+		.filter((f) => f.path.startsWith(PROJECTS_ROOT))
+		.filter((f) => {
+			const c =
+				app.metadataCache.getFileCache(f)?.frontmatter?.client ?? "";
+			return c.toString().includes(customer);
+		})
+		.sort((a, b) => a.basename.localeCompare(b.basename));
+
+	let project = "";
+	if (projects.length) {
+		const projChoices = [P_NONE, ...projects.map((f) => f.basename)];
+		const pickedProj = await qa.suggester(projChoices, projChoices);
+		if (pickedProj === undefined) return; // cancelled
+		if (pickedProj !== P_NONE) project = pickedProj;
+	}
+
+	// 7. Description --------------------------------------------------
 	const description = (
 		(await qa.wideInputPrompt("Description (optional)")) ?? ""
 	).trim();
 
-	// 6. Dates ------------------------------------------------------
+	// 8. Dates ------------------------------------------------------
 	const now = new Date();
 	const pad = (n) => String(n).padStart(2, "0");
 	const y = now.getFullYear();
@@ -104,14 +126,14 @@ module.exports = async (params) => {
 	const stamp = `${y}${m}${d}`;
 	const opened = `${y}-${m}-${d}`;
 
-	// 7. Paths ----------------------------------------------------
+	// 9. Paths ----------------------------------------------------
 	const folder = `${SR_ROOT}/${code}${stamp}-${safeTitle}`;
 	const notePath = `${folder}/Initial Request.md`;
 	if (app.vault.getAbstractFileByPath(notePath)) {
 		throw new Error(`${notePath} already exists.`);
 	}
 
-	// 8. Render template ---------------------------------------
+	// 10. Render template ---------------------------------------
 	const tplFile = app.vault.getAbstractFileByPath(TEMPLATE_PATH);
 	if (!tplFile) throw new Error(`Missing ${TEMPLATE_PATH}`);
 	let body = await app.vault.read(tplFile);
@@ -121,13 +143,14 @@ module.exports = async (params) => {
 		.split("{{VALUE:description}}").join(description)
 		.split("{{DATE:YYYY-MM-DD}}").join(opened);
 	if (!contact) body = body.replace('contact: "[[]]"', "contact:");
+	if (project) body = body.replace(/^project:\s*$/m, `project: "[[${project}]]"`);
 
-	// 9. Create -----------------------------------------------
+	// 11. Create -----------------------------------------------
 	if (!app.vault.getAbstractFileByPath(folder)) {
 		await app.vault.createFolder(folder);
 	}
 	const file = await app.vault.create(notePath, body);
 
-	// 10. Open ----------------------------------------------
+	// 12. Open ----------------------------------------------
 	await app.workspace.getLeaf(false).openFile(file);
 };
