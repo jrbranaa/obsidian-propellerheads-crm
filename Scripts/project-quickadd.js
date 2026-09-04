@@ -4,11 +4,13 @@
  * Wired into the "New Project" QuickAdd macro. Flow:
  *   1. Prompt for the project name
  *   2. Pick the client from a suggester over Companies/
- *   3. Pick a contact from that client's People/ (or none / free text)
- *   4. Pick a billing model (hourly / fixed / not-to-exceed)
- *   5. Prompt quote/cap and/or budget hours as the model warrants
- *   6. Opened date (defaults today), optional scope
- *   7. Create Projects/<name>.md from Templates/Project Template.md, then open it.
+ *   3. Derive the code from that company's `code:` frontmatter (else prompt)
+ *   4. Pick a contact from that client's People/ (or none / free text)
+ *   5. Pick a billing model (hourly / fixed / not-to-exceed)
+ *   6. Prompt quote/cap and/or budget hours as the model warrants
+ *   7. Opened date (defaults today), optional scope
+ *   8. Create  Projects/<CODE>-<name>/<CODE>-<name>.md  from the template,
+ *      then open it. Ancillary project notes live in the same folder.
  *
  * Child Service Requests link back via their `project:` frontmatter — set by
  * Scripts/sr-quickadd.js or by hand. This note owns scope + the rollup, not work.
@@ -30,11 +32,6 @@ module.exports = async (params) => {
 		.replace(/\s+/g, " ")
 		.trim();
 
-	const notePath = `${PROJECTS_ROOT}/${name}.md`;
-	if (app.vault.getAbstractFileByPath(notePath)) {
-		throw new Error(`${notePath} already exists.`);
-	}
-
 	// 2. Client ---------------------------------------------------------
 	const companyFiles = app.vault
 		.getMarkdownFiles()
@@ -52,7 +49,27 @@ module.exports = async (params) => {
 	if (!companyFile) return; // cancelled
 	const client = companyFile.basename;
 
-	// 3. Contact (optional) ---------------------------------------
+	// 3. Code ---------------------------------------------------------
+	const companyFm =
+		app.metadataCache.getFileCache(companyFile)?.frontmatter ?? {};
+	let code = (companyFm.code ?? "").toString().trim();
+	if (!code) {
+		code = (
+			(await qa.inputPrompt(
+				`"${client}" has no code: in frontmatter — enter a short code (e.g. CAH)`,
+			)) ?? ""
+		).trim();
+		if (!code) throw new Error("A code is required to name the project folder.");
+	}
+
+	// 4. Paths ------------------------------------------------------
+	const folder = `${PROJECTS_ROOT}/${code}-${name}`;
+	const notePath = `${folder}/${code}-${name}.md`;
+	if (app.vault.getAbstractFileByPath(notePath)) {
+		throw new Error(`${notePath} already exists.`);
+	}
+
+	// 5. Contact (optional) ---------------------------------------
 	const NONE = "— none —";
 	const OTHER = "— type a name —";
 	const people = app.vault
@@ -75,12 +92,12 @@ module.exports = async (params) => {
 		contact = pickedContact;
 	}
 
-	// 4. Billing model ----------------------------------------------
+	// 6. Billing model ----------------------------------------------
 	const MODELS = ["hourly", "fixed", "not-to-exceed"];
 	const billing_model = await qa.suggester(MODELS, MODELS);
 	if (billing_model === undefined) return; // cancelled
 
-	// 5. Quote / budget -------------------------------------------
+	// 7. Quote / budget -------------------------------------------
 	let quote_usd = "";
 	let budget_hours = "";
 	if (billing_model === "fixed" || billing_model === "not-to-exceed") {
@@ -98,7 +115,7 @@ module.exports = async (params) => {
 		).trim();
 	}
 
-	// 6. Opened + scope -----------------------------------------
+	// 8. Opened + scope -----------------------------------------
 	const now = new Date();
 	const pad = (n) => String(n).padStart(2, "0");
 	const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -110,7 +127,7 @@ module.exports = async (params) => {
 		(await qa.wideInputPrompt("Scope / deliverables (optional)")) ?? ""
 	).trim();
 
-	// 7. Render template --------------------------------------
+	// 9. Render template --------------------------------------
 	const tplFile = app.vault.getAbstractFileByPath(TEMPLATE_PATH);
 	if (!tplFile) throw new Error(`Missing ${TEMPLATE_PATH}`);
 	let body = await app.vault.read(tplFile);
@@ -126,9 +143,12 @@ module.exports = async (params) => {
 	if (!quote_usd) body = body.replace(/^quote_usd:.*\n/m, "");
 	if (!budget_hours) body = body.replace(/^budget_hours:.*\n/m, "");
 
-	// 8. Create + open --------------------------------------
+	// 10. Create + open --------------------------------------
 	if (!app.vault.getAbstractFileByPath(PROJECTS_ROOT)) {
 		await app.vault.createFolder(PROJECTS_ROOT);
+	}
+	if (!app.vault.getAbstractFileByPath(folder)) {
+		await app.vault.createFolder(folder);
 	}
 	const file = await app.vault.create(notePath, body);
 	await app.workspace.getLeaf(false).openFile(file);

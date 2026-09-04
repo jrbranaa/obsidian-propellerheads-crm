@@ -11,7 +11,7 @@ Reconstructed 2026-09-01 after the originals were lost (never pushed, machine di
 | **Log Time (current SR)** | Capture | Adds a row to the **currently open** note's `## Time Log` table, directly under the header separator (newest first). Prompts: date (defaults today), hours, billable (true/false), notes. Produces `\| 2026-09-01 \| 1.25 \| true \| notes \|`. |
 | **Add Company** | Template | Creates `Companies/{name}.md` from `Templates/Company Template.md`. Prompts: company name, phone, code. |
 | **Add Contact** | Macro → `Scripts/contact-quickadd.js` | Prompts full name → pick company from a `Companies/` picker (or *none* / *add new company* — the latter prompts name/phone/code and creates the company first) → optional phone/email. Creates `People/{name}.md` from `Templates/Person Template.md` and opens it. |
-| **New Project** | Macro → `Scripts/project-quickadd.js` | Prompts project name → pick client from `Companies/` → pick contact from that client's `People/` (or none / free text) → pick billing model (`hourly` / `fixed` / `not-to-exceed`) → quote/cap and/or budget hours as the model warrants → opened date (defaults today) → optional scope. Creates `Projects/{name}.md` from `Templates/Project Template.md` and opens it. Empty `contact` / `quote_usd` / `budget_hours` lines are dropped. |
+| **New Project** | Macro → `Scripts/project-quickadd.js` | Prompts project name → pick client from `Companies/` → **derives code** from the company's `code:` frontmatter (else prompts) → pick contact from that client's `People/` (or none / free text) → pick billing model (`hourly` / `fixed` / `not-to-exceed`) → quote/cap and/or budget hours as the model warrants → opened date (defaults today) → optional scope. Creates `Projects/{CODE}-{name}/{CODE}-{name}.md` from `Templates/Project Template.md` and opens it; ancillary notes go in the same folder (SR-style). Empty `contact` / `quote_usd` / `budget_hours` lines are dropped. |
 
 ## Binding hotkeys
 
@@ -35,7 +35,7 @@ Or run any of them from the QuickAdd command-palette entry / ribbon.
 
 ## Projects
 
-Multi-visit / scoped engagements get a **Project** note (`Projects/{name}.md`, `type: project`) that owns scope, phases, billing model, and a rollup — but **not** the work. Work, time, and billable status stay on child Service Requests.
+Multi-visit / scoped engagements get a **Project** folder (`Projects/{CODE}-{name}/`, SR-style) whose main note `{CODE}-{name}.md` (`type: project`) owns scope, phases, billing model, and a rollup — but **not** the work. Ancillary notes (quotes, diagrams, call notes) live in the same folder. Work, time, and billable status stay on child Service Requests.
 
 - SRs link up via a `project:` frontmatter field (blank for break/fix). **New Service Request** offers a project picker filtered to `Projects/` notes whose `client` matches the chosen customer; add it by hand on existing SRs.
 - The Project template's Dataview / `dataviewjs` blocks list the linked SRs and sum logged + billable hours (parsed from each SR's `## Time Log` table), plus remaining vs. `budget_hours` when set.
@@ -64,6 +64,6 @@ Multi-visit / scoped engagements get a **Project** note (`Projects/{name}.md`, `
 - `Scripts/contact-quickadd.js` — new; the **Add Contact** macro script (company picker + inline add-company)
 - `Scripts/project-quickadd.js` — new; the **New Project** macro script
 - `Templates/Service Request Template.md` — switched placeholders to `{{VALUE:…}}`; `## Time Log` is now a Markdown table; added `project:` frontmatter
-- `Templates/Company Template.md` — `{{phone}}`/`{{code}}` → `{{VALUE:…}}`
+- `Templates/Company Template.md` — `{{phone}}`/`{{code}}` → `{{VALUE:…}}`; added a `## Projects` Dataview (Project / contact / status / billing_model / opened / closed). Backfilled into existing client company notes.
 - `Templates/Person Template.md` — new
-- `Templates/Project Template.md` — new; `type: project`, SR rollup + time rollup
+- `Templates/Project Template.md` — new; `type: project`, SR rollup + time rollup. Lives at `Projects/{CODE}-{name}/{CODE}-{name}.md`

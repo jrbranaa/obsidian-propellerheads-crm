@@ -30,6 +30,13 @@ SORT opened DESC
 ---
 ## Projects
 
+```dataview
+TABLE WITHOUT ID file.link AS "Project", contact, status, billing_model, opened, closed
+FROM "Projects"
+WHERE client = this.file.link
+SORT opened DESC
+```
+
 ---
 ## Notes
 
