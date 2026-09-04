@@ -1,4 +1,5 @@
 ---
+category: {{VALUE:Customer,Vendor,Prospect}}
 phone: "{{VALUE:phone}}"
 code: {{VALUE:code}}
 ---

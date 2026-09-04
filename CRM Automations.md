@@ -9,7 +9,7 @@ Reconstructed 2026-09-01 after the originals were lost (never pushed, machine di
 | **New Service Request** | Macro → `Scripts/sr-quickadd.js` | Pick customer from a list of `Companies/` → **auto-derives the code** from that company's `code:` frontmatter → prompts title → pick contact from that company's people (or none / free text) → optional description. Creates `Service Requests/{CODE}{YYYYMMDD}-{title}/Initial Request.md` from the SR template and opens it. |
 | **New Service Request (manual)** | Template | Same output, no script. Every field is a free-text prompt (code, title, customer, contact, description). Fallback for mobile or if the script errors. |
 | **Log Time (current SR)** | Capture | Adds a row to the **currently open** note's `## Time Log` table, directly under the header separator (newest first). Prompts: date (defaults today), hours, billable (true/false), notes. Produces `\| 2026-09-01 \| 1.25 \| true \| notes \|`. |
-| **Add Company** | Template | Creates `Companies/{name}.md` from `Templates/Company Template.md`. Prompts: company name, phone, code. |
+| **Add Company** | Template | Creates `Companies/{name}.md` from `Templates/Company Template.md`. Prompts: company name, `category` (Customer / Vendor / Prospect — a QuickAdd `{{VALUE:a,b,c}}` dropdown), phone, code. |
 | **Add Contact** | Macro → `Scripts/contact-quickadd.js` | Prompts full name → pick company from a `Companies/` picker (or *none* / *add new company* — the latter prompts name/phone/code and creates the company first) → optional phone/email. Creates `People/{name}.md` from `Templates/Person Template.md` and opens it. |
 | **New Project** | Macro → `Scripts/project-quickadd.js` | Prompts project name → pick client from `Companies/` → **derives code** from the company's `code:` frontmatter (else prompts) → pick contact from that client's `People/` (or none / free text) → pick billing model (`hourly` / `fixed` / `not-to-exceed`) → quote/cap and/or budget hours as the model warrants → opened date (defaults today) → optional scope. Creates `Projects/{CODE}-{name}/{CODE}-{name}.md` from `Templates/Project Template.md` and opens it; ancillary notes go in the same folder (SR-style). Empty `contact` / `quote_usd` / `budget_hours` lines are dropped. |
 
@@ -64,6 +64,6 @@ Multi-visit / scoped engagements get a **Project** folder (`Projects/{CODE}-{nam
 - `Scripts/contact-quickadd.js` — new; the **Add Contact** macro script (company picker + inline add-company)
 - `Scripts/project-quickadd.js` — new; the **New Project** macro script
 - `Templates/Service Request Template.md` — switched placeholders to `{{VALUE:…}}`; `## Time Log` is now a Markdown table; added `project:` frontmatter
-- `Templates/Company Template.md` — `{{phone}}`/`{{code}}` → `{{VALUE:…}}`; added a `## Projects` Dataview (Project / contact / status / billing_model / opened / closed). Backfilled into existing client company notes.
+- `Templates/Company Template.md` — `{{phone}}`/`{{code}}` → `{{VALUE:…}}`; added `category` frontmatter (Customer / Vendor / Prospect dropdown) and a `## Projects` Dataview (Project / contact / status / billing_model / opened / closed). Both backfilled into existing company notes.
 - `Templates/Person Template.md` — new
 - `Templates/Project Template.md` — new; `type: project`, SR rollup + time rollup. Lives at `Projects/{CODE}-{name}/{CODE}-{name}.md`
