@@ -1,0 +1,122 @@
+# Client environment — source of truth.
+# Copy to environments/<CODE>/environment.yaml and fill in. Validated against
+# Templates/environment.schema.json by Scripts/env-build.js.
+# See "Client Environment Mapping - Design Recommendation.md" for the full design.
+#
+# Rules of thumb:
+#   - IDs are lowercase-dash, unique within the file. Dependencies reference IDs.
+#   - source: declared  = hand-authored (the default here). The collector sets the rest.
+#   - Secrets NEVER go in this file. credentials[].item holds an op:// reference only.
+#   - internal_only: true hides an entry from the client-facing site.
+#   - Put anything you're unsure of in `unverified:` so it's easy to chase later.
+
+client: <Client Name>
+code: <CODE>              # 2-6 uppercase letters, matches Companies/<Client>.md `code:`
+updated: "2026-01-01"    # quote dates so they stay strings
+summary: >
+  One or two sentences: what this environment is, where it's going.
+
+unverified:
+  - <fact that still needs an on-site or collector check>
+
+sites:
+  - id: main
+    name: <site name>
+    address: |
+      <street>
+      <city, state zip>
+    phone: <site phone>
+    hours: <business hours>
+    primary_contact: "[[<Person>]]"
+
+escalation:
+  - { tier: 1, who: "[[<Person>]]", role: <role>, contact: <phone/email> }
+
+contacts:
+  - { who: "[[<Person>]]", role: <role>, notes: <e.g. day-to-day contact> }
+
+network:
+  topology: <e.g. single flat LAN, no VLANs>
+  public_domain: <example.com>
+  internal_namespace: <lan.example.com>
+  internal_resolver: <e.g. UniFi gateway Local DNS Records>
+  subnets:
+    - id: lan
+      cidr: <192.168.1.0/24>
+      vlan: 1
+      purpose: <all>
+      dhcp_pool: <.100-.199>
+      reserved_infra: <.240-.250>
+      dhcp_server: <device id or description>
+
+circuits:
+  - id: circuit-primary
+    role: primary
+    provider: <ISP>
+    service_type: <cable / fiber / 5G>
+    account_ref: "op://<vault>/<item>"
+    down_mbps:
+    up_mbps:
+    static_ips: []
+    support_phone: <>
+    vendor: <vendor id>
+
+devices:
+  - id: <srv01>
+    type: server           # server|workstation|printer|switch|ap|firewall|gateway|router|nas|ups|phone|sensor|other
+    make_model: <>
+    serial: <>
+    site: main
+    location: <>
+    ip: { address: <>, assignment: static }
+    hostname: <>
+    os: <>
+    roles: []
+    criticality: high
+    vendor: <vendor id>
+    status: active
+    source: declared
+    internal_only: true
+    notes: <>
+
+  # Devices the collector can't inventory (medical/lab consoles, PBX): source: manual + last_verified.
+  # Commodity workstations: NOT listed here — the collector owns environments/<CODE>/workstations.observed.yaml.
+  # List a workstation only when it has a role/quirk worth pinning.
+
+applications:
+  - id: <app-name>
+    name: <>
+    vendor: <vendor id>
+    version: <>
+    runs_on: <device id>
+    depends_on: []
+    criticality: critical
+    status: active
+    support: { phone: <>, portal: <> }
+    source: declared
+
+vendors:
+  - id: <vendor-id>
+    name: <>
+    supports: []
+    account_ref: "op://<vault>/<item>"
+    phone: <>
+    portal: <>
+
+credentials:                 # REFERENCES ONLY
+  - { id: cred-<x>, for: <device/app id>, vault: 1Password, item: "op://<vault>/<item>" }
+
+dependencies:
+  - { service: <name>, requires: [<id or description>, ...], failover: <id> }
+
+monitoring:
+  - { target: <device id>, by: <tool>, checks: [], alert_to: <>, status: planned }
+
+projects:
+  - { name: <>, status: planned, ticket: <>, notes: <> }
+
+known_issues:
+  - { summary: <>, affects: [<id>], severity: high, status: open, ticket: <> }
+
+runbooks:
+  - "[[<Runbook note>]]"

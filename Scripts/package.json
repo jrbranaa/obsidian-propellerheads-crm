@@ -1,0 +1,15 @@
+{
+  "name": "propellerheads-crm-scripts",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Standalone CLI tooling for the CRM vault (env-build, etc). QuickAdd user scripts here run inside Obsidian and need no install.",
+  "scripts": {
+    "env:validate": "node env-build.js",
+    "env:build": "node env-build.js --json"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  }
+}

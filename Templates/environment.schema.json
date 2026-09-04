@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://propellerheads.example/schemas/environment.schema.json",
+  "title": "Client environment",
+  "description": "Structured record of one client's IT environment. Hand-authored (source: declared) and merged with collector output. See 'Client Environment Mapping - Design Recommendation.md'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["client", "code", "sites", "devices"],
+  "properties": {
+    "client": { "type": "string", "minLength": 1 },
+    "code": { "type": "string", "pattern": "^[A-Z]{2,6}$" },
+    "updated": { "type": "string", "format": "date" },
+    "summary": { "type": "string" },
+
+    "unverified": {
+      "description": "Free-text list of facts in this file that still need an on-site / collector check.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "sites": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string" },
+          "address": { "type": "string" },
+          "phone": { "type": "string" },
+          "hours": { "type": "string" },
+          "primary_contact": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "escalation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tier"],
+        "properties": {
+          "tier": { "type": "integer", "minimum": 1 },
+          "who": { "type": "string" },
+          "role": { "type": "string" },
+          "contact": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "contacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["who"],
+        "properties": {
+          "who": { "type": "string" },
+          "role": { "type": "string" },
+          "for": { "type": "array", "items": { "type": "string" } },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "topology": { "type": "string" },
+        "public_domain": { "type": "string" },
+        "internal_namespace": { "type": "string" },
+        "internal_resolver": { "type": "string" },
+        "subnets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "cidr": { "type": "string" },
+              "vlan": { "type": ["integer", "string"] },
+              "purpose": { "type": "string" },
+              "dhcp_pool": { "type": "string" },
+              "reserved_infra": { "type": "string" },
+              "dhcp_server": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "circuits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "role"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "role": { "type": "string", "enum": ["primary", "backup", "other"] },
+          "provider": { "type": "string" },
+          "service_type": { "type": "string" },
+          "account_ref": { "type": "string" },
+          "down_mbps": { "type": "number" },
+          "up_mbps": { "type": "number" },
+          "static_ips": { "type": "array", "items": { "type": "string" } },
+          "modem": { "type": "string" },
+          "support_phone": { "type": "string" },
+          "vendor": { "type": "string" },
+          "source": { "$ref": "#/$defs/source" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "devices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "type": {
+            "type": "string",
+            "enum": ["server", "workstation", "printer", "switch", "ap", "firewall", "gateway", "router", "nas", "ups", "phone", "sensor", "other"]
+          },
+          "subtype": { "type": "string" },
+          "make_model": { "type": "string" },
+          "serial": { "type": "string" },
+          "asset_tag": { "type": "string" },
+          "site": { "type": "string" },
+          "location": { "type": "string" },
+          "mac": { "type": "string" },
+          "hostname": { "type": "string" },
+          "ip": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "address": { "type": "string" },
+              "assignment": { "type": "string", "enum": ["static", "dhcp", "reservation", "unknown"] }
+            }
+          },
+          "os": { "type": "string" },
+          "firmware": { "type": "string" },
+          "roles": { "type": "array", "items": { "type": "string" } },
+          "virtual": { "type": "boolean" },
+          "host": { "type": "string", "description": "id of the device this VM/service runs on" },
+          "queue_name": { "type": "string", "description": "printer: the Windows print-queue name (foreign key held by an app — do not rename lightly)" },
+          "port_type": { "type": "string" },
+          "purchased": { "type": "string" },
+          "warranty_expires": { "type": "string" },
+          "criticality": { "$ref": "#/$defs/criticality" },
+          "vendor": { "type": "string", "description": "id of a vendors[] entry" },
+          "monitored": { "type": ["boolean", "string"] },
+          "status": { "type": "string", "enum": ["active", "planned", "in-progress", "retired", "spare"] },
+          "source": { "$ref": "#/$defs/source" },
+          "last_seen": { "type": "string" },
+          "last_verified": { "type": "string" },
+          "internal_only": { "type": "boolean" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "applications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string" },
+          "vendor": { "type": "string", "description": "id of a vendors[] entry" },
+          "version": { "type": "string" },
+          "account_id_ref": { "type": "string" },
+          "runs_on": { "type": "string", "description": "id of a devices[] entry" },
+          "depends_on": { "type": "array", "items": { "type": "string" } },
+          "criticality": { "$ref": "#/$defs/criticality" },
+          "status": { "type": "string", "enum": ["active", "planned", "evaluating", "migrating", "retired"] },
+          "support": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "phone": { "type": "string" },
+              "portal": { "type": "string" },
+              "email": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          },
+          "source": { "$ref": "#/$defs/source" },
+          "internal_only": { "type": "boolean" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "vendors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string" },
+          "supports": { "type": "array", "items": { "type": "string" } },
+          "account_ref": { "type": "string" },
+          "account_id": { "type": "string" },
+          "phone": { "type": "string" },
+          "portal": { "type": "string" },
+          "sla": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "credentials": {
+      "description": "REFERENCES ONLY. Never a secret value — an op:// URI or a pointer to where the credential lives.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "for"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "for": { "type": "string" },
+          "vault": { "type": "string" },
+          "item": { "type": "string", "pattern": "^(op://|see |n/a).*", "description": "op:// secret reference, a 'see ...' pointer, or 'n/a'" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "dependencies": {
+      "description": "Troubleshooting graph: a service and what it needs to work.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["service", "requires"],
+        "properties": {
+          "service": { "type": "string" },
+          "requires": { "type": "array", "items": { "type": "string" } },
+          "failover": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "monitoring": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["target"],
+        "properties": {
+          "target": { "type": "string" },
+          "by": { "type": "string" },
+          "checks": { "type": "array", "items": { "type": "string" } },
+          "alert_to": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "partial", "planned", "unknown"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "planned", "evaluating", "in-progress", "on-hold", "cancelled", "complete"] },
+          "ticket": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "known_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["summary"],
+        "properties": {
+          "summary": { "type": "string" },
+          "affects": { "type": "array", "items": { "type": "string" } },
+          "severity": { "$ref": "#/$defs/criticality" },
+          "status": { "type": "string", "enum": ["open", "mitigated", "monitoring", "resolved"] },
+          "ticket": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "runbooks": { "type": "array", "items": { "type": "string" } }
+  },
+
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "source": { "type": "string", "enum": ["declared", "unifi", "scan", "snmp", "endpoint", "manual"] },
+    "criticality": { "type": "string", "enum": ["critical", "high", "normal", "low"] }
+  }
+}

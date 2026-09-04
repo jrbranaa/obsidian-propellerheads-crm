@@ -20,6 +20,7 @@
 !/Dashboard.md
 !/CRM Automations.md
 !/CRM Design Recommendation.md
+!/Client Environment Mapping - Design Recommendation.md
 
 # 3. Runbooks/ holds mostly client notes — keep only the reusable template.
 /Runbooks/*
@@ -35,3 +36,9 @@
 
 # 5. Local Claude Code state (machine-specific).
 /.claude/
+
+# 6. Scripts/ tooling: track source, drop installed deps and build output.
+/Scripts/node_modules/
+/Scripts/package-lock.json
+/dist/
+/drift/
