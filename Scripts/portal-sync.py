@@ -18,7 +18,8 @@ frontmatter before syncing; Portal.md then lands in that folder.
 
 Customers are matched by `portal_client: <client login ID>` in the company
 note's frontmatter, falling back to the company note's name equalling the
-portal client name. Contacts are matched to People/ notes by exact name.
+portal client name. Contacts are matched to People/ notes by exact name, then
+`aliases:`, then first name alone when exactly one person there has it.
 
 Vault `status` and portal status are kept separate on purpose (`bill` etc.
 only exist here). The sync reports where they disagree, e.g. completed in the
@@ -62,7 +63,7 @@ IMAGE_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".bmp"}
 
 
 def frontmatter(path):
-    """Flat `key: value` frontmatter as a dict (enough for our fields)."""
+    """`key: value` frontmatter as a dict; YAML block lists (`- item`) become lists."""
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
@@ -70,12 +71,25 @@ def frontmatter(path):
     m = re.match(r"^---\r?\n(.*?)\r?\n---", text, re.S)
     if not m:
         return {}
-    out = {}
+    out, key = {}, None
     for line in m.group(1).splitlines():
         km = re.match(r"^([A-Za-z0-9_-]+):\s*(.*?)\s*$", line)
+        im = re.match(r"^\s*-\s+(.*?)\s*$", line)
         if km:
-            out[km.group(1)] = km.group(2).strip("\"'")
+            key = km.group(1)
+            out[key] = km.group(2).strip("\"'")
+        elif im and key and (out[key] == "" or isinstance(out[key], list)):
+            out[key] = (out[key] or []) + [im.group(1).strip("\"'")]
     return out
+
+
+def as_list(value):
+    """Frontmatter value -> list: block list, inline `[a, b]`, or a single string."""
+    if isinstance(value, list):
+        return value
+    if value.startswith("[") and not value.startswith("[["):
+        return [v.strip(" \"'") for v in value.strip("[]").split(",") if v.strip(" \"'")]
+    return [value] if value else []
 
 
 def unlink(value):
@@ -139,9 +153,11 @@ class Vault:
         for p in sorted((root / "Companies").glob("*.md")):
             fm = frontmatter(p)
             self.companies.append((p.stem, fm.get("code", ""), fm.get("portal_client", "")))
-        self.people = []  # (name, company)
+        self.people = []  # (name, company, aliases)
         for p in sorted((root / "People").glob("*.md")):
-            self.people.append((p.stem, unlink(frontmatter(p).get("company", ""))))
+            fm = frontmatter(p)
+            company = fm.get("company", "")
+            self.people.append((p.stem, unlink(company if isinstance(company, str) else ""), as_list(fm.get("aliases", ""))))
         # portal_id -> (folder, linking note's vault status)
         self.linked = {}
         for note in sorted(self.sr_root.glob("*/*.md")):
@@ -161,10 +177,24 @@ class Vault:
         return None, None
 
     def contact_for(self, contact_name, company):
-        for name, comp in self.people:
-            if name.lower() == contact_name.strip().lower() and comp == company:
-                return name
-        return ""
+        """Match a portal contact name to a People/ note at this company.
+
+        Returns (name, how): how is "" for an exact match, "alias" for one of
+        the note's `aliases:`, "first name" when the portal gave just a first
+        name and exactly one person there has it. Ambiguous -> ("", "").
+        """
+        wanted = " ".join(contact_name.split()).lower()
+        people = [(n, a) for n, c, a in self.people if c == company]
+        for how, hits in (
+            ("", [n for n, _ in people if n.lower() == wanted]),
+            ("alias", [n for n, a in people if wanted in (x.lower() for x in a)]),
+            ("first name", [n for n, _ in people if " " not in wanted and n.split()[0].lower() == wanted]),
+        ):
+            if len(hits) == 1:
+                return hits[0], how
+            if hits:
+                return "", ""
+        return "", ""
 
 
 # ── Rendering ──────────────────────────────────────────────
@@ -317,13 +347,19 @@ def main():
             folder = vault.sr_root / f"{code}{stamp}-{safe_name(sr['title'])}"
             if folder.exists():
                 folder = folder.with_name(f"{folder.name} ({sr['ref']})")
-            contact = vault.contact_for(sr["contact_name"], customer)
+            contact, how = vault.contact_for(sr["contact_name"], customer)
             note = r.initial_request(template, sr, customer, contact)
             vault_status = "inbox"
             if not args.dry_run:
                 folder.mkdir(parents=True)
                 (folder / "Initial Request.md").write_text(note, encoding="utf-8")
-            created.append(f"{tag} → {SR_ROOT}/{folder.name}/" + ("" if contact else "  (contact not matched to People/)"))
+            if not contact:
+                note_on_contact = f"  (contact {sr['contact_name']!r} not matched to People/)"
+            elif how:
+                note_on_contact = f"  (contact {sr['contact_name']!r} → {contact}, by {how})"
+            else:
+                note_on_contact = ""
+            created.append(f"{tag} → {SR_ROOT}/{folder.name}/{note_on_contact}")
 
         # Attachments: download any we don't have yet.
         folder_rel = folder.relative_to(args.vault).as_posix()
