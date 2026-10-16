@@ -67,3 +67,15 @@ Multi-visit / scoped engagements get a **Project** folder (`Projects/{CODE}-{nam
 - `Templates/Company Template.md` — `{{phone}}`/`{{code}}` → `{{VALUE:…}}`; added `category` frontmatter (Customer / Vendor / Prospect dropdown) and a `## Projects` Dataview (Project / contact / status / billing_model / opened / closed). Both backfilled into existing company notes.
 - `Templates/Person Template.md` — new
 - `Templates/Project Template.md` — new; `type: project`, SR rollup + time rollup. Lives at `Projects/{CODE}-{name}/{CODE}-{name}.md`
+
+## Portal sync (client portal → vault)
+
+Service requests submitted through the client portal (`propellerheads.io/portal`) are pulled into the vault by `Scripts/portal-sync.py`. It only reads from the portal and never writes back. Run it with `/sync-portal` in Claude Code (from the vault root; `.claude/commands/sync-portal.md`) or directly: `python3 Scripts/portal-sync.py [SR numbers…] [--dry-run] [--all]`. Needs only Python 3.9+.
+
+- **New portal SR (still open there)** → creates `Service Requests/{CODE}{YYYYMMDD}-{title}/Initial Request.md` from the SR template, `status: inbox`, plus `portal_id: N` in the frontmatter. That note is written once and then belongs to you, so it shows up on the Dashboard like any other SR.
+- **Every linked SR** → (re)writes `Portal.md` in the same folder: current portal fields, contact phone/email, the full change log (including 🔒 internal notes) and attachments, which download to `Portal files/`. **Portal.md is overwritten on every sync, so never edit it.** It has no `status`/`customer`/`opened` fields, so Dataview queries ignore it.
+- **Linking an SR you created by hand**: add `portal_id: N` (the number from `SR-000N`) to its note's frontmatter. The next sync puts `Portal.md` in that folder instead of creating a new one.
+- **Customer mapping**: `portal_client: <client login ID>` in the company note's frontmatter (now in the Company template). If it's missing, the sync falls back to matching the company note's name to the portal client name. Contacts are matched to `People/` notes by exact name; otherwise `contact:` is left blank and the portal contact details stay in Portal.md.
+- **Status**: vault `status` (inbox/next/…/bill) and portal status (what the client sees) are separate. The sync never changes either one, but it warns when they disagree: completed here but still open in the portal, or the other way round.
+- Resolved/closed portal SRs only get a new note with `--all`, or when you name them by number.
+- **Config**: `~/.config/propellerheads/portal-sync.json` → `{"portal_url": "https://propellerheads.io/portal", "token": "…"}`. It's kept outside the vault so Obsidian Sync doesn't copy the token to every device. The server stores only the token's hash (`api_token_hash` in the portal's `app/config.php`; `php app/bin/api-token.php` generates a pair).

@@ -34,11 +34,14 @@
 /.obsidian/workspace-mobile.json
 /.obsidian/**/*.bak
 
-# 5. Local Claude Code state (machine-specific).
-/.claude/
+# 5. Local Claude Code state (machine-specific) — except shared slash commands.
+!/.claude/
+/.claude/*
+!/.claude/commands/
 
 # 6. Scripts/ tooling: track source, drop installed deps and build output.
 /Scripts/node_modules/
 /Scripts/package-lock.json
+/Scripts/__pycache__/
 /dist/
 /drift/
