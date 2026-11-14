@@ -79,3 +79,25 @@ Service requests submitted through the client portal (`propellerheads.io/portal`
 - **Status**: vault `status` (inbox/next/…/bill) and portal status (what the client sees) are separate. The sync never changes either one, but it warns when they disagree: completed here but still open in the portal, or the other way round.
 - Resolved/closed portal SRs only get a new note with `--all`, or when you name them by number.
 - **Config**: `~/.config/propellerheads/portal-sync.json` → `{"portal_url": "https://propellerheads.io/portal", "token": "…"}`. It's kept outside the vault so Obsidian Sync doesn't copy the token to every device. The server stores only the token's hash (`api_token_hash` in the portal's `app/config.php`; `php app/bin/api-token.php` generates a pair).
+
+## Portal documents (vault → client portal)
+
+Any note can be published to a client's **Documents** tab in the portal (proposals, infrastructure docs, service summaries). Mark it in the frontmatter (or start from `Templates/Portal Document Template.md`):
+
+```yaml
+portal_doc: published            # or draft (clients never see drafts)
+portal_category: infrastructure  # proposal | infrastructure | service_summary | other
+portal_client: sah               # optional if customer: "[[Company]]" is set and that company has portal_client
+portal_title: Network Overview   # optional; defaults to the first # heading, then the file name
+portal_change: Replaced the firewall  # optional; shown to the client next to this version
+```
+
+Then run `python3 Scripts/portal-sync.py --push` (or `--push --dry-run` first). It only pushes notes that changed since the last push, and reports anything it skipped and why.
+
+- **Versions**: pushing changed content on top of a published version makes a new version (v2, v3…). The client sees the newest published one with its "Updated" date and can open older ones. While a note is `draft`, each push overwrites the same draft, so the client keeps seeing the last published version until you flip it to `published`.
+- **`portal_slug`** is added to the note on its first push. It's the document's identity, so you can rename or move the note freely. Change it only if you want a new, separate document.
+- **Images and files**: `![[diagram.png]]`, `[[Quote.pdf]]` and `![x](attachments/a.png)` are uploaded with the note. Same file types as SR attachments: images, PDF, Office, text, zip. SVG and Excalidraw can't be uploaded, so export them to PNG.
+- **Links** to other notes (`[[SAH Firewall]]`) become portal links only if that note is also a published document for the same client. Otherwise they show as plain text.
+- **Rendered on the portal**: headings, tables, callouts, task lists, code blocks, highlights. Not rendered: Dataview blocks (dropped), `%% comments %%` (dropped), embedded notes (shown as a link).
+- **Removing** a document: deleting or un-marking the note does **not** take it off the portal. Use the portal admin (Documents → the document → Remove from portal, or Hide from client on one version).
+- **Config**: needs `"write_token"` in `~/.config/propellerheads/portal-sync.json`. It's separate from the read token, and its hash goes in the portal's `api_write_token_hash`. Generate it with `php app/bin/api-token.php`.
