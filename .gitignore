@@ -33,6 +33,7 @@
 /.obsidian/workspace.json
 /.obsidian/workspace-mobile.json
 /.obsidian/appearance.json
+/.obsidian/core-plugins-migration.json
 /.obsidian/**/*.bak
 
 # 5. Local Claude Code state (machine-specific) — except shared slash commands.
