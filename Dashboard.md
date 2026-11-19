@@ -30,8 +30,19 @@ dv.table(
 ```dataview
 TABLE WITHOUT ID link(file.link, replace(file.folder, "Service Requests/", "")) AS "Service Request", customer, contact, opened, closed
 FROM "Service Requests"
-WHERE status = "bill"
+WHERE status = "bill" AND origin != "proactive"
 SORT closed ASC
+```
+
+## Proactive Improvements (value add, no charge)
+
+Work you started on your own (`origin: proactive`), by client and newest first. Use this list when you write the "Proactive improvements (no charge)" section of a client's Summary of Services. Describe what was done and why it helps. Never include hours or a dollar value. Close these as `completed`, never `bill`.
+
+```dataview
+TABLE WITHOUT ID link(file.link, replace(file.folder, "Service Requests/", "")) AS "Improvement", customer, status, project, opened, closed
+FROM "Service Requests"
+WHERE origin = "proactive"
+SORT customer ASC, opened DESC
 ```
 
 ## Stale Inbox (opened 30+ days ago, never triaged)

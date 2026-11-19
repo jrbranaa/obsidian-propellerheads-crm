@@ -3,6 +3,7 @@
  *
  * Wired into the "New Service Request" QuickAdd macro. Flow:
  *   1. Pick the customer from a suggester over Companies/
+ *   1b. Client request or proactive improvement (sets `origin:`)
  *   2. Derive the SR code from that company's `code:` frontmatter
  *      (falls back to an input prompt if the company has no code)
  *   3. Prompt for a short title
@@ -46,6 +47,15 @@ module.exports = async (params) => {
 	if (!companyFile) return; // cancelled
 	const customer = companyFile.basename;
 
+	// 1b. Origin --------------------------------------------------------------
+	// "proactive" = work you initiated as a no-charge value add; it's reported
+	// in the Summary of Services but never invoiced.
+	const origin = await qa.suggester(
+		["Client request", "Proactive improvement (no charge)"],
+		["client", "proactive"],
+	);
+	if (!origin) return; // cancelled
+
 	// 2. Code ---------------------------------------------------------------
 	const companyFm =
 		app.metadataCache.getFileCache(companyFile)?.frontmatter ?? {};
@@ -61,7 +71,11 @@ module.exports = async (params) => {
 
 	// 3. Title ------------------------------------------------------------
 	const rawTitle = (
-		(await qa.inputPrompt("Service Request — short title")) ?? ""
+		(await qa.inputPrompt(
+			origin === "proactive"
+				? "Proactive improvement — short title"
+				: "Service Request — short title",
+		)) ?? ""
 	).trim();
 	if (!rawTitle) return; // cancelled / empty
 	const safeTitle = rawTitle
@@ -141,6 +155,7 @@ module.exports = async (params) => {
 		.split("{{VALUE:customer}}").join(customer)
 		.split("{{VALUE:contact}}").join(contact)
 		.split("{{VALUE:description}}").join(description)
+		.split("{{VALUE:client,proactive}}").join(origin)
 		.split("{{DATE:YYYY-MM-DD}}").join(opened);
 	if (!contact) body = body.replace('contact: "[[]]"', "contact:");
 	if (project) body = body.replace(/^project:\s*$/m, `project: "[[${project}]]"`);

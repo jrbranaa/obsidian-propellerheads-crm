@@ -2,6 +2,7 @@
 customer: "[[{{VALUE:customer}}]]"
 contact: "[[{{VALUE:contact}}]]"
 project:
+origin: {{VALUE:client,proactive}}
 status: inbox
 opened: {{DATE:YYYY-MM-DD}}
 closed:

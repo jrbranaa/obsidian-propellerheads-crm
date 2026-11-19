@@ -41,6 +41,17 @@ Multi-visit / scoped engagements get a **Project** folder (`Projects/{CODE}-{nam
 - The Project template's Dataview / `dataviewjs` blocks list the linked SRs and sum logged + billable hours (parsed from each SR's `## Time Log` table), plus remaining vs. `budget_hours` when set.
 - Rule of thumb: default to an SR; promote to a Project when the work spans 3+ sessions / 2+ weeks, has a quote or fixed price, or has phases to report on. See `CRM Design Recommendation.md` for the fuller rationale.
 
+## Proactive improvements (value add, no charge)
+
+Improvements you make on your own, which the client didn't ask for and isn't paying for, are ordinary SRs marked `origin: proactive`. Client-initiated SRs are `origin: client`. Everything else works the same: same folder, time log, `project:` link and promotion to a Project.
+
+- **Creating one:** **New Service Request** asks "Client request / Proactive improvement (no charge)" right after the customer. The manual choice shows the same dropdown. Portal-synced SRs are always `client`.
+- **Time:** log it as usual with `billable` = `false`, so Project rollups still show the effort. (The Log Time capture can't change its default by origin, so pick `false` yourself.)
+- **Closing:** set these to `completed`, never `bill`. The Dashboard's Ready to Bill list leaves out `proactive` SRs anyway.
+- **Reporting:** the Dashboard's **Proactive Improvements** table lists them by client. In each Summary of Services, add a **"Proactive improvements (no charge)"** section that says what you did and how it helps the client (reliability, security, less staff hassle). Don't show hours or a dollar value, and keep these items off the Invoice Line Items document.
+- **Telling them apart:** if the client asked for it, it's `origin: client`, even if you choose to waive the charge. Log that time as `billable: false` with a note. This keeps the value-add list to work you actually started yourself.
+- All existing SRs were set to `origin: client` on 2026-11-18.
+
 ## Version control
 
 `git init` at the vault root, 2026-09-01. The repo tracks **CRM functionality only** — see `.gitignore`. Notes and CRM data (Companies, People, Service Requests, Meetings, Notes, Sales, images) are **not** tracked; Obsidian Sync remains the source of truth for those.

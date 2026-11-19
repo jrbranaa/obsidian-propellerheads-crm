@@ -302,6 +302,7 @@ class Renderer:
             .replace("{{VALUE:contact}}", contact)
             .replace("{{VALUE:description}}", description)
             .replace("{{DATE:YYYY-MM-DD}}", opened)
+            .replace("{{VALUE:client,proactive}}", "client")
         )
         if not contact:
             body = body.replace('contact: "[[]]"', "contact:")
