@@ -38,11 +38,28 @@ SORT closed ASC
 
 Work you started on your own (`origin: proactive`), by client and newest first. Use this list when you write the "Proactive improvements (no charge)" section of a client's Summary of Services. Describe what was done and why it helps. Never include hours or a dollar value. Close these as `completed`, never `bill`.
 
-```dataview
-TABLE WITHOUT ID link(file.link, replace(file.folder, "Service Requests/", "")) AS "Improvement", customer, status, project, opened, closed
-FROM "Service Requests"
-WHERE origin = "proactive"
-SORT customer ASC, opened DESC
+```dataviewjs
+const all = dv.pages('"Service Requests"').where(p => p.status);
+const norm = v => String(Array.isArray(v) ? v[0] : (v ?? "")).trim().toLowerCase();
+const rows = all.where(p => norm(p.origin) === "proactive")
+	.sort(p => p.opened ?? "", "desc")
+	.sort(p => String(p.customer ?? ""), "asc");
+if (rows.length) {
+	dv.table(["Improvement", "Customer", "Status", "Project", "Opened", "Closed"],
+		rows.map(p => [
+			`[[${p.file.path}|${p.file.folder.replace("Service Requests/", "")}]]`,
+			p.customer ?? "", p.status ?? "", p.project ?? "", p.opened ?? "", p.closed ?? "",
+		]));
+} else {
+	// Diagnostic: shows what Dataview actually sees for `origin`
+	const counts = {};
+	for (const p of all) {
+		const k = `${typeof p.origin}:${JSON.stringify(p.origin ?? null)}`;
+		counts[k] = (counts[k] ?? 0) + 1;
+	}
+	const newest = all.sort(p => p.opened ?? "", "desc").limit(3).map(p => p.file.folder).array();
+	dv.paragraph(`No proactive SRs found. SR notes indexed: ${all.length}. origin values: ${JSON.stringify(counts)}. Newest: ${newest.join(" · ")}`);
+}
 ```
 
 ## Stale Inbox (opened 30+ days ago, never triaged)
